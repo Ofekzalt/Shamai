@@ -4,11 +4,13 @@ Fill this during the day-1–2 spike. **No loader ships without a row here.**
 
 | Source | URL | License / terms | Access | `published_at`? | Lag if estimated | `history_available` | Go/no-go | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Transactions (nadlan / alt.) | | | | | | | pending | Throttling ≠ permission |
-| Tel Aviv renewal / Pinui-Binui | | | | | | | pending | Snapshot vs events |
-| iplan / XPLAN | | | | | | | pending | Status history required for as-of plans |
-| Statistical areas (CBS) | | | | | | n/a | pending | |
-| Geocode: TLV municipal | | | | n/a | n/a | n/a | pending | First choice |
-| Geocode: GovMap | | | | n/a | n/a | n/a | pending | Fallback only |
+| Transactions (nadlan / alt.) | [odata.org.il nadlan CSV](https://www.odata.org.il/dataset/84f2bc2d-87a0-474e-a3ea-63d7bb9b5447/resource/24eabceb-faea-4f92-9e94-df710c29cae7) | Creative Commons Attribution (package on odata.org.il) | CKAN `datastore_search` + optional ZIP bulk; filter `city_name`, `dealdatetime` | no | 90 | yes (historical rows in open dump) | **go** | Primary mirror. [nadlan.gov.il](https://www.nadlan.gov.il/) UI only — **no-go** for scrape/automation. ~34k TLV rows in dump sample. Throttling ≠ permission. |
+| Tel Aviv renewal / Pinui-Binui | [TLV IView2 layer 528](https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/528) | Tel Aviv municipal GIS (viewer disclaimer; confirm cache with city) | ArcGIS polygon query; `sw_hitchadshut_ironit=1`; supplement [layer 746](https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/746) points | partial (`tr_shinuy_status` on snapshot) | 7 | false | **go** | No layer named Pinui-Binui; urban renewal via TABA polygons + housing-project points. Not an append-only event feed — do not replay history from snapshots alone. |
+| iplan / XPLAN | [Xplan MapServer](https://ags.iplan.gov.il/arcgisiplan/rest/services/PlanningPublic/Xplan/MapServer) | Planning Administration public map services | ArcGIS REST: layer 1 metadata, layer 3 polygons; query by `pl_number` / `mp_id` | partial (`depositing_date`, `pl_date_advertise`, `last_update_date`) | 14 | false | **go** | Online plans from 2011+ (portal). Python httpx TLS handshake fails against this host; `curl` works — provider must use compatible TLS client. Synthesize `plan_status_events` in loader; no native event stream verified. |
+| Statistical areas (CBS) | [CBS 2008 mesh ZIP](https://e.data.gov.il/dataset/6b729165-dc9c-49b3-afc6-eceabd8fef70/resource/3b88cb58-62cd-43ea-9156-7b81ead557b1/download/50400-2008.7z) | data.gov.il package (confirm license on dataset page) | Bulk national shapefile download | n/a | n/a | n/a | **go** | Reference geometry for price index; bulk load only. |
+| Geocode: TLV municipal | [כתובות layer 527](https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/527) | Tel Aviv municipal GIS | ArcGIS query on `t_rechov`, `ms_bayit`; `lon`/`lat` WGS84 | n/a | n/a | n/a | **go** | First-choice geocoder; cache in DB. |
+| Geocode: GovMap | [search-service](https://www.govmap.gov.il/api/search-service/search) ([docs](https://api.govmap.gov.il/)) | GovMap / government mapping terms (confirm cache) | JSON POST search API | n/a | n/a | n/a | **pending** | Spike: CloudFront 403 from this environment; API docs reachable. Re-verify from app/Docker network before enabling fallback. |
 
 Conservative lag is per source (days). Timezone for `as_of` defaults: Asia/Jerusalem.
+
+Spike scripts: `uv run python -m scripts.spike.transactions` (and `geocode_tlv`, `geocode_govmap`, `cbs_statistical_areas`, `tlv_renewal`, `iplan`). Raw samples under gitignored `data/spike/`.
