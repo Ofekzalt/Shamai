@@ -1,0 +1,95 @@
+[project]
+name = "shamai"
+version = "0.1.0"
+description = "Due-diligence engine for a single apartment in Tel Aviv–Yafo"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.1",
+    "fastapi>=0.162.0",
+    "geoalchemy2>=0.20.0",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.18",
+    "numpy>=2.5.4",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.2",
+    "shapely>=2.2.0",
+    "sqlalchemy>=2.1.6",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.15",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.importlinter]
+root_packages = ["app", "evals", "scripts"]
+
+[[tool.importlinter.contracts]]
+id = "core-isolated"
+name = "Core does not import domain or infrastructure"
+type = "forbidden"
+source_modules = ["app.core"]
+forbidden_modules = ["app.modules", "app.jobs", "app.infrastructure"]
+
+[[tool.importlinter.contracts]]
+id = "valuation-pure"
+name = "Valuation does not import the app package"
+type = "forbidden"
+source_modules = ["app.modules.valuation"]
+forbidden_modules = ["app"]
+
+[[tool.importlinter.contracts]]
+id = "reporting-boundary"
+name = "Reporting does not import repositories, graph, or tools"
+type = "forbidden"
+source_modules = ["app.modules.reporting"]
+forbidden_modules = [
+    "app.modules.property_data.repository",
+    "app.modules.planning.repository",
+    "app.modules.evidence.repository",
+    "app.modules.investigation.graph",
+    "app.modules.investigation.tools",
+]
+
+[[tool.importlinter.contracts]]
+id = "graph-tools-boundary"
+name = "Graph and tools do not import repositories or providers"
+type = "forbidden"
+source_modules = ["app.modules.investigation.graph", "app.modules.investigation.tools"]
+forbidden_modules = [
+    "app.modules.property_data.repository",
+    "app.modules.property_data.providers",
+    "app.modules.planning.repository",
+    "app.modules.planning.providers",
+]
+
+[[tool.importlinter.contracts]]
+id = "app-not-evals-scripts"
+name = "App does not import evals or scripts"
+type = "forbidden"
+source_modules = ["app"]
+forbidden_modules = ["evals", "scripts"]
+
+[[tool.importlinter.contracts]]
+id = "controllers-via-main"
+name = "Only app.main imports investigation controllers"
+type = "forbidden"
+source_modules = ["app"]
+forbidden_modules = ["app.modules.investigation.controller"]
