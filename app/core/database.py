@@ -2,9 +2,14 @@ from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
