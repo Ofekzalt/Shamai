@@ -1,0 +1,11 @@
+.venv
+.git
+.cursor
+__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+data
+.env
+*.md
+docs/phases.md
