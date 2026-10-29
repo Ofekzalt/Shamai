@@ -2,8 +2,14 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
+import app.infrastructure.llm.models  # noqa: F401
+import app.jobs.models  # noqa: F401
+import app.modules.evidence.models  # noqa: F401
+import app.modules.planning.models  # noqa: F401
+import app.modules.property_data.models  # noqa: F401
 from alembic import context
 from app.core.config import get_settings
+from app.core.database import Base
 
 config = context.config
 
@@ -13,7 +19,28 @@ if config.config_file_name is not None:
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-target_metadata = None
+target_metadata = Base.metadata
+
+_SHAMAI_TABLES = {
+    "evidence",
+    "geocode_cache",
+    "jobs",
+    "llm_calls",
+    "plan_status_events",
+    "planning_area_coverage",
+    "plans",
+    "renewal_polygons",
+    "statistical_areas",
+    "transaction_area_coverage",
+    "transactions",
+    "alembic_version",
+}
+
+
+def include_object(object, name, type_, reflected, compare_to):  # noqa: ANN001
+    if type_ == "table" and reflected and name not in _SHAMAI_TABLES:
+        return False
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -23,6 +50,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -37,7 +65,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
