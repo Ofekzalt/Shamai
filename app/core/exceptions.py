@@ -1,0 +1,2 @@
+class ShamaiError(Exception):
+    pass
