@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
+import time
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.logging import log_extra
 from app.core.point_in_time import compute_available_at
 from app.core.results import CoverageStatus, Limitation, LimitationCode, ServiceResult
 from app.infrastructure.gis.arcgis import HttpGetClient
@@ -33,6 +36,8 @@ from app.modules.planning.repository import (
     upsert_planning_coverage_complete,
     upsert_renewal_polygon,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _bbox_around(lon: float, lat: float) -> tuple[float, float, float, float]:
@@ -67,7 +72,12 @@ def _cells_need_planning_fetch(
         ):
             missing.add(cell)
             continue
-        if open_window_stale(window_end=row.window_end, lag_days=lag_days, now=now):
+        if open_window_stale(
+            window_end=row.window_end,
+            lag_days=lag_days,
+            now=now,
+            requested_end=window_end,
+        ):
             missing.add(cell)
     return missing
 
@@ -136,7 +146,20 @@ def ensure_iplan_loaded(
     )
     if not missing:
         return None
+    logger.info(
+        "coverage missing",
+        extra=log_extra(event="coverage.missing", source=IPLAN_SOURCE, cell_count=len(missing)),
+    )
+    started = time.perf_counter()
     try:
+        logger.info(
+            "ingestion started",
+            extra=log_extra(
+                event="ingestion.started",
+                source=IPLAN_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         features = iplan.fetch_polygons_in_bbox(client, minx=minx, miny=miny, maxx=maxx, maxy=maxy)
         retrieved_at = now
         for feature in features:
@@ -172,8 +195,30 @@ def ensure_iplan_loaded(
                 updated_at=now,
             )
         session.flush()
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        logger.info(
+            "ingestion completed",
+            extra=log_extra(
+                event="ingestion.completed",
+                source=IPLAN_SOURCE,
+                record_count=len(features),
+                duration_ms=duration_ms,
+            ),
+        )
+        logger.info(
+            "coverage completed",
+            extra=log_extra(
+                event="coverage.completed",
+                source=IPLAN_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         return None
     except Exception as exc:
+        logger.exception(
+            "ingestion failed",
+            extra=log_extra(event="ingestion.failed", source=IPLAN_SOURCE),
+        )
         return Limitation(code=LimitationCode.PROVIDER_FAILED, message=str(exc))
 
 
@@ -200,6 +245,10 @@ def plans_at_point(
         for plan, event in rows
     ]
     if limitation:
+        logger.warning(
+            "coverage incomplete",
+            extra=log_extra(event="coverage.incomplete", source=IPLAN_SOURCE),
+        )
         return ServiceResult(
             data=data,
             coverage_status=CoverageStatus.INCOMPLETE,
@@ -232,7 +281,24 @@ def ensure_renewal_loaded(
     )
     if not missing:
         return None
+    logger.info(
+        "coverage missing",
+        extra=log_extra(
+            event="coverage.missing",
+            source=RENEWAL_SOURCE,
+            cell_count=len(missing),
+        ),
+    )
+    started = time.perf_counter()
     try:
+        logger.info(
+            "ingestion started",
+            extra=log_extra(
+                event="ingestion.started",
+                source=RENEWAL_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         features = tlv_renewal.fetch_renewal_in_bbox(
             client, minx=minx, miny=miny, maxx=maxx, maxy=maxy
         )
@@ -277,8 +343,30 @@ def ensure_renewal_loaded(
                 updated_at=now,
             )
         session.flush()
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        logger.info(
+            "ingestion completed",
+            extra=log_extra(
+                event="ingestion.completed",
+                source=RENEWAL_SOURCE,
+                record_count=len(features),
+                duration_ms=duration_ms,
+            ),
+        )
+        logger.info(
+            "coverage completed",
+            extra=log_extra(
+                event="coverage.completed",
+                source=RENEWAL_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         return None
     except Exception as exc:
+        logger.exception(
+            "ingestion failed",
+            extra=log_extra(event="ingestion.failed", source=RENEWAL_SOURCE),
+        )
         return Limitation(code=LimitationCode.PROVIDER_FAILED, message=str(exc))
 
 
@@ -306,6 +394,10 @@ def renewal_at_point(
         for row in rows
     ]
     if limitation:
+        logger.warning(
+            "coverage incomplete",
+            extra=log_extra(event="coverage.incomplete", source=RENEWAL_SOURCE),
+        )
         return ServiceResult(
             data=data,
             coverage_status=CoverageStatus.INCOMPLETE,

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from typing import Any, Protocol
 from urllib.parse import urlencode
 
+from app.core.logging import host_from_url, log_extra
 from app.modules.property_data.constants import (
     ODATA_DATASTORE_RESOURCE,
     ODATA_SEARCH_URL,
@@ -12,6 +14,8 @@ from app.modules.property_data.constants import (
     TLV_CITY,
 )
 from app.modules.property_data.dto import TransactionRecord
+
+logger = logging.getLogger(__name__)
 
 
 class HttpGetClient(Protocol):
@@ -81,9 +85,18 @@ def fetch_tlv_window(
             "filters": filters,
         }
     )
-    response = client.get(f"{ODATA_SEARCH_URL}?{query}")
+    url = f"{ODATA_SEARCH_URL}?{query}"
+    response = client.get(url)
     status = getattr(response, "status_code", 200)
     if status >= 400:
+        logger.warning(
+            "external request failed",
+            extra=log_extra(
+                event="external.request_failed",
+                host=host_from_url(ODATA_SEARCH_URL),
+                status_code=status,
+            ),
+        )
         raise RuntimeError(f"odata datastore_search HTTP {status}")
     payload = response.json() if hasattr(response, "json") else json.loads(response)
     result = payload.get("result", {})

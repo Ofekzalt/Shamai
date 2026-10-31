@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.point_in_time import visible_as_of
 from app.modules.property_data.constants import TRANSACTION_SOURCE
 from app.modules.property_data.coverage import Cell
-from app.modules.property_data.dto import GeocodeRecord, TransactionRecord
+from app.modules.property_data.dto import ComparableCandidate, GeocodeRecord, TransactionRecord
 from app.modules.property_data.models import (
     GeocodeCache,
     StatisticalArea,
@@ -22,6 +22,49 @@ from app.modules.property_data.models import (
 def list_transactions_as_of(session: Session, as_of: datetime) -> list[Transaction]:
     stmt = visible_as_of(select(Transaction), as_of)
     return list(session.scalars(stmt).all())
+
+
+def _candidate_from_row(
+    row: Transaction,
+    *,
+    distance_m: float,
+    cbs_code: str | None,
+    lon: float,
+    lat: float,
+) -> ComparableCandidate:
+    return ComparableCandidate(
+        source_row_id=row.source_row_id,
+        price_agorot=row.price_agorot,
+        size_sqm=row.size_sqm,
+        rooms=row.rooms,
+        floor=row.floor,
+        neighborhood=row.neighborhood,
+        lon=lon,
+        lat=lat,
+        distance_m=distance_m,
+        effective_at=row.effective_at,
+        available_at=row.available_at,
+        statistical_area=cbs_code,
+    )
+
+
+def list_geolocated_transactions_as_of(
+    session: Session,
+    as_of: datetime,
+) -> list[ComparableCandidate]:
+    stmt = visible_as_of(
+        select(
+            Transaction,
+            StatisticalArea.cbs_code,
+            func.ST_X(Transaction.geom),
+            func.ST_Y(Transaction.geom),
+        ),
+        as_of,
+    ).outerjoin(StatisticalArea, func.ST_Contains(StatisticalArea.geom, Transaction.geom))
+    return [
+        _candidate_from_row(row, distance_m=0.0, cbs_code=cbs_code, lon=float(x), lat=float(y))
+        for row, cbs_code, x, y in session.execute(stmt).all()
+    ]
 
 
 def list_nearby_transactions_as_of(
@@ -41,6 +84,47 @@ def list_nearby_transactions_as_of(
         )
     )
     return list(session.scalars(stmt).all())
+
+
+def list_knn_candidates(
+    session: Session,
+    *,
+    lon: float,
+    lat: float,
+    radius_m: float,
+    as_of: datetime,
+    limit: int,
+) -> list[ComparableCandidate]:
+    point = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+    point_2039 = func.ST_Transform(point, 2039)
+    geom_2039 = func.ST_Transform(Transaction.geom, 2039)
+    distance = func.ST_Distance(geom_2039, point_2039)
+    stmt = (
+        visible_as_of(
+            select(
+                Transaction,
+                distance.label("distance_m"),
+                StatisticalArea.cbs_code,
+                func.ST_X(Transaction.geom),
+                func.ST_Y(Transaction.geom),
+            ),
+            as_of,
+        )
+        .outerjoin(StatisticalArea, func.ST_Contains(StatisticalArea.geom, Transaction.geom))
+        .where(func.ST_DWithin(geom_2039, point_2039, radius_m))
+        .order_by(geom_2039.op("<->")(point_2039))
+        .limit(limit)
+    )
+    return [
+        _candidate_from_row(
+            row,
+            distance_m=float(distance_m),
+            cbs_code=cbs_code,
+            lon=float(x),
+            lat=float(y),
+        )
+        for row, distance_m, cbs_code, x, y in session.execute(stmt).all()
+    ]
 
 
 def get_geocode(

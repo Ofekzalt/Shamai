@@ -9,3 +9,7 @@ SOURCE_ROW_FIELD = "_id"
 
 TLV_ADDRESS_LAYER = "https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/527/query"
 GEOCODE_SOURCE = "tlv_municipal"
+CANDIDATE_LIMIT = 50
+LOAD_RADIUS_M = 2000.0
+# Matches valuation TIME_DAYS[-1] (1095); property_data must not import valuation.
+LOAD_LOOKBACK_DAYS = 1095

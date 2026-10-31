@@ -5,8 +5,11 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.core.results import CoverageStatus, Limitation, LimitationCode, ServiceResult
+from app.modules.property_data.constants import CANDIDATE_LIMIT
 
 __all__ = [
+    "ComparableCandidate",
+    "ComparableCandidatesQuery",
     "CoverageStatus",
     "GeocodeRecord",
     "Limitation",
@@ -45,3 +48,26 @@ class NearbyTransactionsQuery(BaseModel):
     lat: float
     radius_m: float = Field(default=500.0, gt=0)
     as_of: datetime
+
+
+class ComparableCandidatesQuery(BaseModel):
+    lon: float
+    lat: float
+    radius_m: float = Field(default=500.0, gt=0)
+    as_of: datetime
+    limit: int = Field(default=CANDIDATE_LIMIT, gt=0)
+
+
+class ComparableCandidate(BaseModel):
+    source_row_id: str
+    price_agorot: int
+    size_sqm: float | None
+    rooms: float | None
+    floor: int | None
+    neighborhood: str | None
+    lon: float
+    lat: float
+    distance_m: float
+    effective_at: datetime
+    available_at: datetime
+    statistical_area: str | None

@@ -20,6 +20,15 @@ def lon_lat_to_cell(lon: float, lat: float) -> Cell:
     return Cell(x=int(easting // CELL_SIZE_M), y=int(northing // CELL_SIZE_M))
 
 
+def cells_for_radius(lon: float, lat: float, radius_m: float) -> set[Cell]:
+    easting, northing = _WGS84_TO_ITM.transform(lon, lat)
+    min_e, max_e = easting - radius_m, easting + radius_m
+    min_n, max_n = northing - radius_m, northing + radius_m
+    x0, x1 = int(min_e // CELL_SIZE_M), int(max_e // CELL_SIZE_M)
+    y0, y1 = int(min_n // CELL_SIZE_M), int(max_n // CELL_SIZE_M)
+    return {Cell(x, y) for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)}
+
+
 def cells_for_bbox(minx: float, miny: float, maxx: float, maxy: float) -> set[Cell]:
     corners = [
         lon_lat_to_cell(minx, miny),
@@ -46,7 +55,15 @@ def window_covers(
     return True
 
 
-def open_window_stale(*, window_end: datetime | None, lag_days: int, now: datetime) -> bool:
+def open_window_stale(
+    *,
+    window_end: datetime | None,
+    lag_days: int,
+    now: datetime,
+    requested_end: datetime | None = None,
+) -> bool:
     if window_end is None:
+        return False
+    if requested_end is not None and requested_end + timedelta(days=lag_days) < now:
         return False
     return window_end + timedelta(days=lag_days) < now

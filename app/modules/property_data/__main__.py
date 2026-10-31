@@ -7,11 +7,13 @@ from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.database import get_session_factory
+from app.core.logging import configure_logging
 from app.infrastructure.gis.http import default_http_client
 from app.modules.property_data.dto import NearbyTransactionsQuery
 from app.modules.property_data.service import geocode_address, nearby_transactions
 from app.modules.property_data.service_cbs import load_statistical_areas_from_zip
 from app.modules.property_data.service_transactions import load_transactions_for_point
+from app.modules.property_data.window import transaction_window_start
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,6 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     cbs.add_argument("zip_path", type=Path)
 
     args = parser.parse_args(argv)
+    configure_logging(get_settings().log_level)
     session_factory = get_session_factory()
     with default_http_client() as client, session_factory() as session:
         if args.command == "geocode":
@@ -46,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "transactions":
             as_of = _parse_as_of(args.as_of)
-            window_start = as_of.replace(year=as_of.year - 2)
+            window_start = transaction_window_start(as_of)
             result = load_transactions_for_point(
                 session,
                 client,

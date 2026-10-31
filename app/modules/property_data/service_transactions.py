@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.logging import log_extra
 from app.core.point_in_time import compute_available_at
 from app.core.results import Limitation, LimitationCode, ServiceResult
 from app.infrastructure.gis.arcgis import HttpGetClient
-from app.modules.property_data.constants import TRANSACTION_LAG_DAYS, TRANSACTION_SOURCE
+from app.modules.property_data.constants import (
+    LOAD_RADIUS_M,
+    TRANSACTION_LAG_DAYS,
+    TRANSACTION_SOURCE,
+)
 from app.modules.property_data.coverage import (
     Cell,
+    cells_for_radius,
     lon_lat_to_cell,
     open_window_stale,
     window_covers,
@@ -24,6 +32,7 @@ from app.modules.property_data.repository import (
 )
 
 COVERAGE_SOURCE = TRANSACTION_SOURCE
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -55,7 +64,12 @@ def _cells_need_fetch(
         ):
             missing.add(cell)
             continue
-        if open_window_stale(window_end=row.window_end, lag_days=TRANSACTION_LAG_DAYS, now=now):
+        if open_window_stale(
+            window_end=row.window_end,
+            lag_days=TRANSACTION_LAG_DAYS,
+            now=now,
+            requested_end=window_end,
+        ):
             missing.add(cell)
     return missing
 
@@ -69,11 +83,11 @@ def ensure_transactions_loaded(
     window_start: datetime,
     window_end: datetime,
     settings: Settings,
+    radius_m: float = 0.0,
 ) -> LoadOutcome:
     del settings
     now = datetime.now(tz=UTC)
-    cell = lon_lat_to_cell(lon, lat)
-    cells = {cell}
+    cells = cells_for_radius(lon, lat, radius_m) if radius_m > 0 else {lon_lat_to_cell(lon, lat)}
     missing = _cells_need_fetch(
         session,
         cells,
@@ -83,15 +97,42 @@ def ensure_transactions_loaded(
     )
     if not missing:
         return LoadOutcome(limitation=None)
+    logger.info(
+        "coverage missing",
+        extra=log_extra(
+            event="coverage.missing",
+            source=COVERAGE_SOURCE,
+            cell_count=len(missing),
+        ),
+    )
+    started = time.perf_counter()
     try:
+        logger.info(
+            "ingestion started",
+            extra=log_extra(
+                event="ingestion.started",
+                source=COVERAGE_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         offset = 0
         retrieved_at = now
+        total_records = 0
         while True:
             records, _total, last_page = tx_provider.fetch_tlv_window(
                 client,
                 window_start=window_start,
                 window_end=window_end,
                 offset=offset,
+            )
+            logger.debug(
+                "ingestion page",
+                extra=log_extra(
+                    event="ingestion.page",
+                    source=COVERAGE_SOURCE,
+                    offset=offset,
+                    record_count=len(records),
+                ),
             )
             for raw in records:
                 record = tx_provider.normalize_record(raw)
@@ -109,6 +150,7 @@ def ensure_transactions_loaded(
                     available_at_estimated=estimated,
                     retrieved_at=retrieved_at,
                 )
+                total_records += 1
             if last_page:
                 break
             offset += len(records)
@@ -122,8 +164,30 @@ def ensure_transactions_loaded(
                 updated_at=now,
             )
         session.flush()
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        logger.info(
+            "ingestion completed",
+            extra=log_extra(
+                event="ingestion.completed",
+                source=COVERAGE_SOURCE,
+                record_count=total_records,
+                duration_ms=duration_ms,
+            ),
+        )
+        logger.info(
+            "coverage completed",
+            extra=log_extra(
+                event="coverage.completed",
+                source=COVERAGE_SOURCE,
+                cell_count=len(missing),
+            ),
+        )
         return LoadOutcome(limitation=None)
     except Exception as exc:
+        logger.exception(
+            "ingestion failed",
+            extra=log_extra(event="ingestion.failed", source=COVERAGE_SOURCE),
+        )
         return LoadOutcome(
             limitation=Limitation(
                 code=LimitationCode.PROVIDER_FAILED,
@@ -141,6 +205,7 @@ def load_transactions_for_point(
     window_start: datetime,
     window_end: datetime,
     settings: Settings,
+    radius_m: float = LOAD_RADIUS_M,
 ) -> ServiceResult[None]:
     outcome = ensure_transactions_loaded(
         session,
@@ -150,6 +215,7 @@ def load_transactions_for_point(
         window_start=window_start,
         window_end=window_end,
         settings=settings,
+        radius_m=radius_m,
     )
     if outcome.limitation:
         return ServiceResult(data=None, limitation=outcome.limitation)
