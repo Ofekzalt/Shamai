@@ -27,7 +27,7 @@ Geometry in stored facts is EPSG:4326 unless a query documents otherwise. Area-c
 
 ## What belongs here
 
-- `config.py` — settings, neighborhood allowlist, timezone, budgets.
+- `config.py` — settings, timezone, budgets.
 - `database.py` — engine and session dependency. Route modules do not open their own engines.
 - `exceptions.py` — shared error types.
 - `point_in_time.py` — `visible_as_of`.

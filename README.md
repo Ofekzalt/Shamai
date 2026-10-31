@@ -6,7 +6,7 @@ A caller submits an address, asking price, size, and a profile (`homebuyer` or `
 
 The repo is a modular monolith: one Python package, one PostgreSQL/PostGIS database, an `api` process, and a `worker` process. Reference loads and backfill use the same module services as the worker. The client is Swagger UI.
 
-Coverage is Tel Aviv–Yafo, restricted to a neighborhood allowlist in config. Addresses that geocode outside that allowlist are rejected.
+Coverage is Tel Aviv–Yafo: addresses must geocode through the municipal address layer. Unknown streets or addresses outside that catalog are rejected.
 
 ## Why it exists
 
