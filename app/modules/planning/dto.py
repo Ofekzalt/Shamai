@@ -34,3 +34,10 @@ class RenewalAtPointQuery(BaseModel):
     lon: float
     lat: float
     as_of: datetime
+
+
+class PlanStatusEventRecord(BaseModel):
+    status: str
+    effective_at: datetime
+    published_at: datetime | None = None
+    available_at: datetime

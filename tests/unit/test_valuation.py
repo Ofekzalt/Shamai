@@ -204,6 +204,38 @@ def test_index_ignores_future_months() -> None:
     assert factor == 1.0
 
 
+def test_estimate_respects_widen_false_radius() -> None:
+    subject = _subject()
+    near = [
+        _row(
+            source_row_id=f"near{i}",
+            distance_m=100.0,
+            effective_at=_dt(2024, 10, 1),
+            available_at=_dt(2024, 12, 1),
+        )
+        for i in range(MIN_COMPS)
+    ]
+    far = [
+        _row(
+            source_row_id=f"far{i}",
+            distance_m=1500.0,
+            effective_at=_dt(2024, 10, 1),
+            available_at=_dt(2024, 12, 1),
+        )
+        for i in range(3)
+    ]
+    defaulted = estimate_value(near + far, subject, index_points=[])
+    assert defaulted.n_comps == MIN_COMPS
+    unwidened = estimate_value(
+        near + far,
+        subject,
+        index_points=[],
+        widen=False,
+        radius_m=2000.0,
+    )
+    assert unwidened.n_comps == MIN_COMPS + 3
+
+
 def test_estimate_thin_when_fewer_than_min_comps() -> None:
     subject = _subject()
     rows = [_row(source_row_id="only")]

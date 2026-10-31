@@ -38,22 +38,39 @@ def _within(
     return lo <= size <= hi
 
 
-def select_comparables(rows: list[CompRow], subject: Subject) -> list[CompRow]:
+def select_comparables(
+    rows: list[CompRow],
+    subject: Subject,
+    *,
+    widen: bool = True,
+    radius_m: float | None = None,
+) -> list[CompRow]:
     pool = [row for row in rows if _usable(row, subject)]
     radius_i = 0
     time_i = 0
     size_i = 0
-    selected = [
-        row
-        for row in pool
-        if _within(
-            row,
-            subject,
-            radius_m=RADIUS_M[radius_i],
-            time_days=TIME_DAYS[time_i],
-            size_tol=SIZE_TOLERANCE[size_i],
-        )
-    ]
+    start_radius = radius_m if radius_m is not None else RADIUS_M[0]
+
+    def _selected(*, rad: float, time_days: int, size_tol: float) -> list[CompRow]:
+        return [
+            row
+            for row in pool
+            if _within(
+                row,
+                subject,
+                radius_m=rad,
+                time_days=time_days,
+                size_tol=size_tol,
+            )
+        ]
+
+    selected = _selected(
+        rad=start_radius,
+        time_days=TIME_DAYS[time_i],
+        size_tol=SIZE_TOLERANCE[size_i],
+    )
+    if not widen:
+        return selected
     for dim in WIDEN_ORDER:
         while len(selected) < MIN_COMPS:
             if dim == "radius" and radius_i < len(RADIUS_M) - 1:

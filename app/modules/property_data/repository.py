@@ -24,6 +24,57 @@ def list_transactions_as_of(session: Session, as_of: datetime) -> list[Transacti
     return list(session.scalars(stmt).all())
 
 
+def get_transaction_as_of(
+    session: Session,
+    *,
+    source_row_id: str,
+    as_of: datetime,
+) -> Transaction | None:
+    stmt = visible_as_of(
+        select(Transaction).where(
+            Transaction.source == TRANSACTION_SOURCE,
+            Transaction.source_row_id == source_row_id,
+        ),
+        as_of,
+    )
+    return session.scalars(stmt).first()
+
+
+def get_transaction_record_as_of(
+    session: Session,
+    *,
+    source_row_id: str,
+    as_of: datetime,
+) -> TransactionRecord | None:
+    stmt = visible_as_of(
+        select(
+            Transaction,
+            func.ST_X(Transaction.geom),
+            func.ST_Y(Transaction.geom),
+        ).where(
+            Transaction.source == TRANSACTION_SOURCE,
+            Transaction.source_row_id == source_row_id,
+        ),
+        as_of,
+    )
+    row = session.execute(stmt).first()
+    if row is None:
+        return None
+    transaction, x, y = row
+    return TransactionRecord(
+        source_row_id=transaction.source_row_id,
+        price_agorot=transaction.price_agorot,
+        size_sqm=transaction.size_sqm,
+        rooms=transaction.rooms,
+        floor=transaction.floor,
+        neighborhood=transaction.neighborhood,
+        lon=float(x),
+        lat=float(y),
+        effective_at=transaction.effective_at,
+        published_at=transaction.published_at,
+    )
+
+
 def _candidate_from_row(
     row: Transaction,
     *,

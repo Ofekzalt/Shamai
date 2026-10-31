@@ -30,25 +30,16 @@ def _shamai_handler() -> logging.Handler:
     return handlers[0]
 
 
-def test_configure_logging_is_idempotent() -> None:
+def test_configure_logging_json_and_idempotent() -> None:
     _reset_logging()
     configure_logging("DEBUG")
     first = len(logging.getLogger("app").handlers)
     configure_logging("INFO")
     assert len(logging.getLogger("app").handlers) == first
-    assert _shamai_handler().level == logging.INFO
+    handler = _shamai_handler()
+    assert handler.level == logging.INFO
     assert logging.getLogger("app").level == logging.INFO
 
-
-def test_invalid_log_level_raises() -> None:
-    with pytest.raises(ValueError, match="invalid log level"):
-        parse_log_level("verbose")
-
-
-def test_json_log_contains_fields_and_extras() -> None:
-    _reset_logging()
-    configure_logging("INFO")
-    handler = _shamai_handler()
     buffer = io.StringIO()
     old_stream = handler.stream
     handler.stream = buffer
@@ -69,3 +60,8 @@ def test_json_log_contains_fields_and_extras() -> None:
     finally:
         handler.stream = old_stream
         clear_log_context()
+
+
+def test_invalid_log_level_raises() -> None:
+    with pytest.raises(ValueError, match="invalid log level"):
+        parse_log_level("verbose")

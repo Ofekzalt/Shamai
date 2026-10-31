@@ -13,6 +13,10 @@ from app.modules.planning.coverage import Cell
 from app.modules.planning.models import Plan, PlanningAreaCoverage, PlanStatusEvent, RenewalPolygon
 
 
+def get_plan(session: Session, plan_id: uuid.UUID) -> Plan | None:
+    return session.get(Plan, plan_id)
+
+
 def list_status_events_as_of(
     session: Session,
     plan_id: uuid.UUID,

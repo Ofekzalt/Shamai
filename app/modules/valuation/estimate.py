@@ -45,8 +45,10 @@ def estimate_value(
     subject: Subject,
     *,
     index_points: list[IndexPoint],
+    widen: bool = True,
+    radius_m: float | None = None,
 ) -> Estimate:
-    selected = select_comparables(rows, subject)
+    selected = select_comparables(rows, subject, widen=widen, radius_m=radius_m)
     adjusted: list[tuple[float, float]] = []
     used_index = True
     for row in selected:
