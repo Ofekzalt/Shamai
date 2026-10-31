@@ -8,7 +8,7 @@ FastAPI analysis routes, request and status models, and the investigation lifecy
 
 - Preserve the v1 analysis routes, status names, and idempotency contract until an ADR changes them.
 - Do not accept `prompt` or `variant`. Variant is worker and eval config.
-- Reject addresses that geocode outside Tel Aviv–Yafo or outside `SHAMAI_NEIGHBORHOODS`.
+- Reject addresses that do not geocode through the Tel Aviv–Yafo municipal address layer.
 - `controller.py` imports `jobs` and local DTOs. It does not import graph nodes, tools, repositories, or providers.
 - Do not open a database engine in the controller. Use the session dependency from `app.core`.
 - Never return raw LLM traces as the user-facing report.

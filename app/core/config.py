@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +15,6 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://shamai:shamai@localhost:5432/shamai",
         validation_alias="DATABASE_URL",
     )
-    neighborhoods: list[str] = Field(default_factory=list)
     timezone: str = "Asia/Jerusalem"
     max_dispatches: int = 6
     max_tool_calls: int = 8
@@ -23,17 +22,9 @@ class Settings(BaseSettings):
     heartbeat_seconds: int = 60
     run_timeout_seconds: int = 600
     step_timeout_seconds: int = 120
-
-    @field_validator("neighborhoods", mode="before")
-    @classmethod
-    def parse_neighborhoods(cls, value: object) -> list[str]:
-        if value is None or value == "":
-            return []
-        if isinstance(value, str):
-            return [part.strip() for part in value.split(",") if part.strip()]
-        if isinstance(value, list):
-            return [str(part).strip() for part in value if str(part).strip()]
-        return []
+    http_timeout_seconds: float = 30.0
+    http_connect_timeout_seconds: float = 15.0
+    log_level: str = "INFO"
 
 
 @lru_cache

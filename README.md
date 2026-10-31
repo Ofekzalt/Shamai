@@ -6,7 +6,7 @@ A caller submits an address, asking price, size, and a profile (`homebuyer` or `
 
 The repo is a modular monolith: one Python package, one PostgreSQL/PostGIS database, an `api` process, and a `worker` process. Reference loads and backfill use the same module services as the worker. The client is Swagger UI.
 
-Coverage is Tel Aviv–Yafo, restricted to a neighborhood allowlist in config. Addresses that geocode outside that allowlist are rejected.
+Coverage is Tel Aviv–Yafo: addresses must geocode through the municipal address layer. Unknown streets or addresses outside that catalog are rejected.
 
 ## Why it exists
 
@@ -125,7 +125,7 @@ Graph and tools do not import repositories, providers, or `valuation`. `app` doe
 - `python -m evals.valuation.run` — temporal holdout on transactions; comps engine vs baseline.
 - `python -m evals.agents.run` — ~15 properties in `evals/agents/golden_set.yaml`; expected findings from the DB; variants `single` / `rules` / `llm`; accuracy, support, completeness, follow-ups, cost from `llm_calls`, latency. Five cases scored by hand in `evals/agents/manual_review.md`.
 
-Results are committed as summaries under `evals/results/`.
+Agent runs may send traces to LangSmith later for debugging; published metrics still come from `llm_calls` and the eval CLIs above. Results are committed as summaries under `evals/results/`.
 
 ## Stack
 

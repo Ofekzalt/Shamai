@@ -13,7 +13,7 @@ This package is allowed to import `app`. `app` must never import `evals`.
 - `compare_around_event` success means the comparison ran and was labeled non-causal, not that uplift was proved.
 - Commit summaries (Markdown/JSON), not raw traces or downloaded source data.
 - Do not change production prompts "just for the eval" without a flag.
-- Do not depend on LangSmith; read `llm_calls`.
+- Score eval cost and accuracy from `llm_calls` and backtest CLI output. LangSmith traces are optional later and must not replace committed `evals/results/` metrics.
 - Keep backtest and agent evals independent so backtest can run before agents exist.
 
 ## Two programs

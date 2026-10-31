@@ -22,7 +22,7 @@ Read [`README.md`](README.md), this file, [`docs/data-sources.md`](docs/data-sou
 - Valuation and calculated-claim functions stay pure and unit-tested without a database.
 - Tools are adapters: call module services, call `valuation`, upsert evidence. No investigation policy in tools. Services own coverage checks and provider fallback.
 - Idempotent writes: evidence keyed by hash(run, tool, params); jobs keyed by `idempotency_key`.
-- Record LLM cost in `llm_calls`. Do not rely on LangSmith for evaluation metrics.
+- Record LLM cost in `llm_calls`. Published eval metrics come from `llm_calls` and `evals.valuation.run`, not LangSmith. LangSmith tracing may be enabled later for debugging agent runs; it must not replace those numbers.
 - Do not add comments that restate the code. Do not add docstrings that duplicate type names.
 
 ## Variants

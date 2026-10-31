@@ -27,7 +27,8 @@ Geometry in stored facts is EPSG:4326 unless a query documents otherwise. Area-c
 
 ## What belongs here
 
-- `config.py` — settings, neighborhood allowlist, timezone, budgets.
+- `config.py` — settings, timezone, budgets.
 - `database.py` — engine and session dependency. Route modules do not open their own engines.
 - `exceptions.py` — shared error types.
+- `logging.py` — JSON logs to stderr on loggers `app` and `evals` (handler `shamai`); `set_log_context` for `request_id` / `job_id`. Event names: `ingestion.started|completed|failed`, `coverage.missing|incomplete|completed`, `geocode.cache_hit|failed`, `knn.candidates`, `valuation.completed|insufficient_comps`, `external.request_failed`, `database.connection_failed`; Phase 6 adds `job.started|completed|failed`.
 - `point_in_time.py` — `visible_as_of`.
