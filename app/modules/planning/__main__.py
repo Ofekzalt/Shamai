@@ -4,7 +4,9 @@ import argparse
 import sys
 from datetime import UTC, datetime
 
+from app.core.config import get_settings
 from app.core.database import get_session_factory
+from app.core.logging import configure_logging
 from app.infrastructure.gis.http import default_http_client
 from app.modules.planning.dto import PlansAtPointQuery, RenewalAtPointQuery
 from app.modules.planning.service import plans_at_point, renewal_at_point
@@ -25,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     renewal.add_argument("--as-of", dest="as_of", default=None)
 
     args = parser.parse_args(argv)
+    configure_logging(get_settings().log_level)
     as_of = _parse_as_of(args.as_of)
     session_factory = get_session_factory()
     with default_http_client() as client, session_factory() as session:

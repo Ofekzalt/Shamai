@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     step_timeout_seconds: int = 120
     http_timeout_seconds: float = 30.0
     http_connect_timeout_seconds: float = 15.0
+    log_level: str = "INFO"
 
 
 @lru_cache
