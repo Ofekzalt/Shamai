@@ -125,7 +125,7 @@ Graph and tools do not import repositories, providers, or `valuation`. `app` doe
 - `python -m evals.valuation.run` — temporal holdout on transactions; comps engine vs baseline.
 - `python -m evals.agents.run` — ~15 properties in `evals/agents/golden_set.yaml`; expected findings from the DB; variants `single` / `rules` / `llm`; accuracy, support, completeness, follow-ups, cost from `llm_calls`, latency. Five cases scored by hand in `evals/agents/manual_review.md`.
 
-Results are committed as summaries under `evals/results/`.
+Agent runs may send traces to LangSmith later for debugging; published metrics still come from `llm_calls` and the eval CLIs above. Results are committed as summaries under `evals/results/`.
 
 ## Stack
 

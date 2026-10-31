@@ -7,7 +7,7 @@ Model client and usage recording. Graph nodes do not open the client or the `llm
 ## Agent rules
 
 - The jobs runner attaches the cost callback. Nodes call the client the runner injected.
-- Record token usage and cost in `llm_calls`. Do not rely on LangSmith for evaluation metrics.
+- Record token usage and cost in `llm_calls`. Eval scoreboards use `llm_calls`, not LangSmith. Optional LangSmith tracing in Phase 9 is for run inspection only.
 - Do not import `app.modules` or `app.jobs`.
 - Do not choose investigation policy, follow-ups, or which claims to keep.
 - Eval and production share this client. A prompt change for an eval needs an explicit flag, not a second client.
