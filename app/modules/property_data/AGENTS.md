@@ -20,7 +20,7 @@ Addresses, the geocode cache, residential transactions, statistical areas, and t
 
 ## Coverage
 
-A request maps to grid cells in EPSG:2039. A cell satisfies the request only when its status is `complete`, its stored window covers the requested dates, and the open end of that window is still within the source lag documented in `data-sources.md`. A closed historical window does not need another fetch for an earlier `as_of`.
+A request maps to grid cells in EPSG:2039 (250 m cells via `app/infrastructure/gis/coverage_grid.py`). A cell satisfies the request only when its status is `complete`, its stored window covers the requested dates, and the open end of that window is still within the source lag documented in `data-sources.md`. A closed historical window does not need another fetch for an earlier `as_of`.
 
 Fetch only cells that fail that check. Group them into as few bounding boxes as the provider allows, follow pagination, validate, normalize, and upsert. Mark those cells `complete` only after the provider proves the last page. If it cannot, leave them `incomplete` even when some rows were stored.
 

@@ -43,6 +43,7 @@ class GeocodeCache(Base):
     lon: Mapped[float] = mapped_column(nullable=False)
     lat: Mapped[float] = mapped_column(nullable=False)
     source: Mapped[str] = mapped_column(String(32), nullable=False)
+    neighborhood: Mapped[str | None] = mapped_column(String(128), nullable=True)
     retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     geom: Mapped[str] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326, spatial_index=False),
