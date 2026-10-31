@@ -9,6 +9,8 @@ from starlette.responses import Response
 
 from app.core.config import get_settings
 from app.core.logging import clear_log_context, configure_logging, set_log_context
+from app.modules.evidence.controller import router as evidence_router
+from app.modules.investigation.controller import router as investigation_router
 
 configure_logging(get_settings().log_level)
 
@@ -27,3 +29,6 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
 app = FastAPI()
 app.add_middleware(RequestIdMiddleware)
+
+app.include_router(investigation_router)
+app.include_router(evidence_router)

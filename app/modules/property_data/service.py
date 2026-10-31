@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -15,10 +16,12 @@ from app.modules.property_data.dto import (
     GeocodeRecord,
     NearbyTransactionsQuery,
     ServiceResult,
+    TransactionRecord,
 )
 from app.modules.property_data.providers import geocode_tlv
 from app.modules.property_data.repository import (
     get_geocode,
+    get_transaction_record_as_of,
     list_knn_candidates,
     list_nearby_transactions_as_of,
     upsert_geocode,
@@ -143,3 +146,44 @@ def comparable_candidates(
             limitation=load.limitation,
         )
     return ServiceResult(data=rows, coverage_status=CoverageStatus.COMPLETE)
+
+
+def transaction_detail(
+    session: Session,
+    client: HttpGetClient,
+    *,
+    source_row_id: str,
+    lon: float,
+    lat: float,
+    radius_m: float,
+    as_of: datetime,
+) -> ServiceResult[TransactionRecord | None]:
+    from app.core.config import get_settings
+    from app.modules.property_data.service_transactions import ensure_transactions_loaded
+
+    settings = get_settings()
+    load = ensure_transactions_loaded(
+        session,
+        client,
+        lon=lon,
+        lat=lat,
+        window_start=transaction_window_start(as_of),
+        window_end=as_of,
+        settings=settings,
+        radius_m=radius_m,
+    )
+    record = get_transaction_record_as_of(
+        session,
+        source_row_id=source_row_id,
+        as_of=as_of,
+    )
+    if load.limitation is not None:
+        return ServiceResult(
+            data=record,
+            coverage_status=CoverageStatus.INCOMPLETE,
+            limitation=load.limitation,
+        )
+    return ServiceResult(
+        data=record,
+        coverage_status=CoverageStatus.COMPLETE,
+    )

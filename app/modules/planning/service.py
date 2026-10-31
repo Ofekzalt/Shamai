@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -23,14 +24,17 @@ from app.modules.planning.coverage import open_window_stale, window_covers
 from app.modules.planning.dto import (
     PlanAtPoint,
     PlansAtPointQuery,
+    PlanStatusEventRecord,
     RenewalAtPoint,
     RenewalAtPointQuery,
 )
 from app.modules.planning.providers import iplan, tlv_renewal
 from app.modules.planning.repository import (
+    get_plan,
     get_planning_coverage_cells,
     list_plans_at_point_as_of,
     list_renewal_polygons_at_point_as_of,
+    list_status_events_as_of,
     upsert_plan,
     upsert_plan_status_event,
     upsert_planning_coverage_complete,
@@ -253,6 +257,35 @@ def plans_at_point(
             data=data,
             coverage_status=CoverageStatus.INCOMPLETE,
             limitation=limitation,
+        )
+    return ServiceResult(data=data, coverage_status=CoverageStatus.COMPLETE)
+
+
+def plan_status_history(
+    session: Session,
+    *,
+    plan_id: uuid.UUID,
+    as_of: datetime,
+) -> ServiceResult[list[PlanStatusEventRecord]]:
+    plan = get_plan(session, plan_id)
+    events = list_status_events_as_of(session, plan_id, as_of)
+    data = [
+        PlanStatusEventRecord(
+            status=event.status,
+            effective_at=event.effective_at,
+            published_at=event.published_at,
+            available_at=event.available_at,
+        )
+        for event in events
+    ]
+    if plan is None:
+        return ServiceResult(
+            data=data,
+            coverage_status=CoverageStatus.INCOMPLETE,
+            limitation=Limitation(
+                code=LimitationCode.COVERAGE_INCOMPLETE,
+                message="Plan is not loaded; empty history is not a complete status record",
+            ),
         )
     return ServiceResult(data=data, coverage_status=CoverageStatus.COMPLETE)
 

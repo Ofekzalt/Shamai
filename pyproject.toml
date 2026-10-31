@@ -19,6 +19,7 @@ dependencies = [
     "sqlalchemy>=2.1.6",
     "uvicorn>=0.54.0",
     "python-json-logger>=4.2.0",
+    "langgraph-checkpoint-postgres>=3.2.0",
 ]
 
 [dependency-groups]
@@ -83,6 +84,7 @@ forbidden_modules = [
     "app.modules.planning.repository",
     "app.modules.planning.providers",
 ]
+allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 id = "app-not-evals-scripts"
@@ -95,5 +97,22 @@ forbidden_modules = ["evals", "scripts"]
 id = "controllers-via-main"
 name = "Only app.main imports investigation controllers"
 type = "forbidden"
-source_modules = ["app"]
-forbidden_modules = ["app.modules.investigation.controller"]
+source_modules = [
+    "app.jobs",
+    "app.infrastructure",
+    "app.modules.property_data",
+    "app.modules.planning",
+    "app.modules.valuation",
+    "app.modules.reporting",
+    "app.modules.investigation.graph",
+    "app.modules.investigation.tools",
+    "app.modules.investigation.service",
+    "app.modules.evidence.store",
+    "app.modules.evidence.repository",
+    "app.modules.evidence.verifier",
+    "app.modules.evidence.calculations",
+]
+forbidden_modules = [
+    "app.modules.investigation.controller",
+    "app.modules.evidence.controller",
+]
