@@ -191,8 +191,19 @@ def _run_with_session(session: Session, *, as_of: datetime) -> int:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Temporal valuation backtest")
+    parser.add_argument(
+        "--as-of",
+        dest="as_of",
+        default=None,
+        help="Holdout end date (ISO-8601). Defaults to now UTC.",
+    )
+    args = parser.parse_args()
+    now = datetime.fromisoformat(args.as_of).replace(tzinfo=UTC) if args.as_of else None
     configure_logging(get_settings().log_level)
-    return run()
+    return run(now=now)
 
 
 if __name__ == "__main__":

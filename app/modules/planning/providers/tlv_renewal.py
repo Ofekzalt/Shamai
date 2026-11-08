@@ -29,7 +29,7 @@ def fetch_renewal_in_bbox(
         where="sw_hitchadshut_ironit=1",
         out_fields="taba,t_status,tr_shinuy_status,OBJECTID",
         return_geometry=True,
-        result_record_count=500,
+        result_record_count=100,
         geometry=envelope_wgs84(minx, miny, maxx, maxy),
         geometry_type="esriGeometryEnvelope",
         in_sr=4326,

@@ -9,8 +9,8 @@ def test_normalize_record_maps_price_and_dates() -> None:
     record = normalize_record(
         {
             "_id": "abc",
-            "dealdatetime": "2024-06-01",
-            "price": "5000000",
+            "dealdatetime": "2024-06-01T00:00:00",
+            "dealamount": "5,000,000",
             "lon": 34.78,
             "lat": 32.08,
         }

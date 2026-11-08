@@ -18,12 +18,15 @@ def fetch_geocode(
     street: str,
     house_number: str,
 ) -> GeocodeRecord | None:
-    where = f"t_rechov = '{_escape(street)}' AND ms_bayit = '{_escape(house_number)}'"
+    house = house_number.strip()
+    if not house.isdigit():
+        raise ValueError(f"house number must be numeric for TLV layer: {house_number!r}")
+    where = f"t_rechov = '{_escape(street)}' AND ms_bayit = {int(house)}"
     payload = arcgis_query(
         client,
         TLV_ADDRESS_LAYER,
         where=where,
-        out_fields="t_rechov,ms_bayit,lon,lat,t_shchuna",
+        out_fields="t_rechov,ms_bayit,lon,lat",
         return_geometry=False,
         result_record_count=1,
     )
@@ -35,7 +38,6 @@ def fetch_geocode(
     lat = attrs.get("lat")
     if lon is None or lat is None:
         return None
-    neighborhood = attrs.get("t_shchuna")
     return GeocodeRecord(
         street=street,
         house_number=house_number,
@@ -43,5 +45,5 @@ def fetch_geocode(
         lat=float(lat),
         source=GEOCODE_SOURCE,
         retrieved_at=datetime.now(tz=UTC),
-        neighborhood=str(neighborhood) if neighborhood is not None else None,
+        neighborhood=None,
     )

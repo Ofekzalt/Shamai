@@ -115,9 +115,12 @@ def ensure_transactions_loaded(
                 cell_count=len(missing),
             ),
         )
+        from app.modules.property_data.providers import geocode_street
+
         offset = 0
         retrieved_at = now
         total_records = 0
+        street_coords: dict[str, tuple[float, float]] = {}
         while True:
             records, _total, last_page = tx_provider.fetch_tlv_window(
                 client,
@@ -135,6 +138,29 @@ def ensure_transactions_loaded(
                 ),
             )
             for raw in records:
+                if not tx_provider.record_in_window(
+                    raw,
+                    window_start=window_start,
+                    window_end=window_end,
+                ):
+                    continue
+                lon = raw.get("lon") or raw.get("longitude")
+                lat = raw.get("lat") or raw.get("latitude")
+                if lon is None or lat is None:
+                    street = raw.get("street")
+                    if not street:
+                        continue
+                    key = str(street)
+                    if key not in street_coords:
+                        street_coords[key] = geocode_street.fetch_street_centroid(
+                            client,
+                            street=key,
+                        )
+                    coords = street_coords.get(key)
+                    if coords is None:
+                        continue
+                    lon, lat = coords
+                    raw = {**raw, "lon": lon, "lat": lat}
                 record = tx_provider.normalize_record(raw)
                 if record is None:
                     continue

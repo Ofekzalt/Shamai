@@ -127,7 +127,7 @@ Graph and tools do not import repositories, providers, or `valuation`. `app` doe
 
 Agent runs may send traces to LangSmith later for debugging; published metrics still come from `llm_calls` and the eval CLIs above. Results are committed as summaries under `evals/results/` (`valuation_latest.md`, `agents_latest.md`).
 
-**Latest committed summaries (empty reference DB):** valuation backtest did not run — no transactions loaded. Agent eval skipped all 15 golden-set rows — geocode cache empty. Re-run both CLIs after loading property_data and geocode cache; refresh the markdown files before comparing variants.
+**Latest committed summaries (reference DB loaded 2026-11-08):** `comps` beats baseline on the temporal holdout at `as_of=2025-07-01` (MAPE 16.4% vs 33.9%; 51.7% within 10% vs 18.4%). Agent eval on 15 golden properties: `rules` and `single` both 75.6% accuracy, 100% claim support, 63.3% completeness; `rules` triggered 7 follow-ups vs 0 for `single`. Load data with `scripts/load_reference_data.sh` (CBS bulk may 403 from some networks; iplan needs TLS workaround per `docs/data-sources.md`).
 
 ## Stack
 

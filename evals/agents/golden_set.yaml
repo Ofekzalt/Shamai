@@ -56,7 +56,7 @@ properties:
     profile: homebuyer
     as_of: "2025-03-01"
   - id: king-george-25
-    address: "מלך ג'ורג' 25"
+    address: "המלך ג'ורג' 25"
     asking_price_agorot: 420000000
     size_sqm: 78
     profile: investor

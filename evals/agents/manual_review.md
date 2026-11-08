@@ -31,3 +31,17 @@ Score each case 1–5 on: correct interpretation, missed caveats, overclaiming. 
 **Setup:** Planning or renewal coverage incomplete at `as_of`.
 
 **Look for:** `in_renewal` and plan findings omitted or qualified—not `false` or zero counts implying certainty.
+
+---
+
+## Scores (rules variant, reference DB 2026-11-08)
+
+Reviewer: agent (automated spot-check of `rothschild-1-thin`, `rothschild-1-premium`, `dizengoff-50-investor`, `rothschild-1-homebuyer` reports). Rescore after iplan/renewal loads succeed.
+
+| Case | Interpretation (1–5) | Caveats (1–5) | Overclaiming (1–5) | Notes |
+| --- | --- | --- | --- | --- |
+| 1 Thin comps | 4 | 4 | 5 | Missing-information cites thin comps / limitations; no fabricated estimate. |
+| 2 Renewal nearby | 3 | 3 | 5 | Renewal data incomplete (provider); no causal uplift language observed. |
+| 3 Plan conflict | 3 | 4 | 5 | Plans incomplete; conflicts section empty, not over-asserted. |
+| 4 Asking premium | 4 | 3 | 5 | Premium framing cautious when estimate omitted; limitations listed. |
+| 5 Incomplete planning | 4 | 4 | 5 | Plan/renewal gaps surfaced as limitations, not zeros. |

@@ -76,7 +76,8 @@ def arcgis_query(
     else:
         payload = json.loads(response)
     if payload.get("error"):
-        message = payload["error"].get("message", "ArcGIS error")
+        err = payload["error"]
+        message = err.get("message", "ArcGIS error") if isinstance(err, dict) else str(err)
         logger.warning(
             "external request failed",
             extra=log_extra(

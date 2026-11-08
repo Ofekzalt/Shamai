@@ -1,10 +1,11 @@
 # Agent eval summary
 
-- variant=single evaluated=0 skipped=15 accuracy=0.0% claim_support=0.0% completeness=0.0% followups=0 cost_usd=0.0000 latency_p50_ms=0 latency_p95_ms=0
-- variant=rules evaluated=0 skipped=15 accuracy=0.0% claim_support=0.0% completeness=0.0% followups=0 cost_usd=0.0000 latency_p50_ms=0 latency_p95_ms=0
-- variant=llm evaluated=0 skipped=15 accuracy=0.0% claim_support=0.0% completeness=0.0% followups=0 cost_usd=0.0000 latency_p50_ms=0 latency_p95_ms=0
+- variant=rules evaluated=15 skipped=0 accuracy=75.6% claim_support=100.0% completeness=63.3% followups=7 cost_usd=0.0000 latency_p50_ms=161 latency_p95_ms=255
+- variant=single evaluated=15 skipped=0 accuracy=75.6% claim_support=100.0% completeness=63.3% followups=0 cost_usd=0.0000 latency_p50_ms=114 latency_p95_ms=208
+- variant=llm skipped (SHAMAI_LLM_API_KEY not set in this run)
 
 ## Notes
 
-- No golden-set addresses found in geocode cache; all properties skipped. Load municipal geocode cache before expecting non-zero accuracy.
-- Skipped properties: allenby-100, arlozorov-45, ben-yehuda-12, bialik-8, dizengoff-50-2023, dizengoff-50-homebuyer, dizengoff-50-investor, frishman-20, ibn-gabirol-30, king-george-25, rothschild-1-2024, rothschild-1-homebuyer, rothschild-1-investor, rothschild-1-premium, rothschild-1-thin
+- Reference DB loaded via municipal geocode + odata TLV transactions (street centroids; `dealnature` size field).
+- Planning providers (iplan TLS, renewal geometry page size) often return incomplete coverage; completeness penalizes missing plan/renewal sections accordingly.
+- Use `python -m evals.valuation.run --as-of 2025-07-01` when the latest transaction `available_at` is before “now”.
