@@ -1,4 +1,4 @@
 # Valuation backtest summary
 
-- Status: no geolocated transactions at `as_of`
-- Action: load property_data, then re-run `python -m evals.valuation.run`
+- comps: n=429 MAE=140714870 agorot MAPE=16.4% within_10=51.7%
+- baseline: n=429 MAE=192916852 agorot MAPE=33.9% within_10=18.4%
