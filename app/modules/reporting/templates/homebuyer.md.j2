@@ -1,0 +1,25 @@
+# Homebuyer report
+
+Address: {{ report.address }}
+
+{% if report.estimate_agorot %}Asking vs estimate uses stored claims, not new figures.{% endif %}
+
+## Claims
+{% for claim in report.claims %}
+- {{ claim.text }}
+{% endfor %}
+
+## Missing information
+{% for item in report.missing_information %}
+- {{ item }}
+{% endfor %}
+
+## Uncertainty
+{% for item in report.uncertainty %}
+- {{ item }}
+{% endfor %}
+
+## Conflicts
+{% for item in report.conflicts %}
+- {{ item }}
+{% endfor %}

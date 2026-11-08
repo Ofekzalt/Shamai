@@ -11,6 +11,7 @@ from app.infrastructure.gis.arcgis import HttpGetClient
 from app.modules.evidence.store import upsert_evidence
 from app.modules.investigation.tools._helpers import (
     candidate_to_comp,
+    comp_row_payload,
     coverage_value,
     dt_param,
     index_point_payload,
@@ -20,9 +21,32 @@ from app.modules.property_data import service as property_data_service
 from app.modules.property_data.constants import TRANSACTION_SOURCE
 from app.modules.property_data.dto import ComparableCandidatesQuery
 from app.modules.valuation.comparables import select_comparables
+from app.modules.valuation.constants import (
+    MIN_COMPS,
+    RADIUS_M,
+    SIZE_TOLERANCE,
+    TIME_DAYS,
+    WIDEN_ORDER,
+)
 from app.modules.valuation.dto import Subject
 from app.modules.valuation.estimate import estimate_value
 from app.modules.valuation.price_index import build_index, time_factor
+
+__all__ = [
+    "MIN_COMPS",
+    "RADIUS_M",
+    "SIZE_TOLERANCE",
+    "TIME_DAYS",
+    "WIDEN_ORDER",
+    "CompareAroundEventResult",
+    "FindComparablesResult",
+    "PriceIndexResult",
+    "TransactionDetailResult",
+    "compare_around_event",
+    "find_comparables",
+    "price_index",
+    "transaction_detail",
+]
 
 
 class FindComparablesResult(BaseModel):
@@ -30,6 +54,9 @@ class FindComparablesResult(BaseModel):
     n_comps: int
     confidence: str | None
     candidate_count: int
+    comps: list[dict]
+    coverage_status: str | None
+    limitation: dict | None
     evidence_ids: list[uuid.UUID]
 
 
@@ -61,6 +88,8 @@ def find_comparables(
     as_of: datetime,
     size_sqm: float,
     radius_m: float = 500.0,
+    time_days: int = TIME_DAYS[0],
+    size_tol: float = SIZE_TOLERANCE[0],
     floor: int | None = None,
     rooms: float | None = None,
     source_row_id: str | None = None,
@@ -82,7 +111,14 @@ def find_comparables(
         rooms=rooms,
         source_row_id=source_row_id,
     )
-    selected = select_comparables(comp_rows, subject, widen=False, radius_m=radius_m)
+    selected = select_comparables(
+        comp_rows,
+        subject,
+        widen=False,
+        radius_m=radius_m,
+        time_days=time_days,
+        size_tol=size_tol,
+    )
     statistical_area = next(
         (row.statistical_area for row in selected if row.statistical_area),
         next((row.statistical_area for row in comp_rows if row.statistical_area), None),
@@ -98,6 +134,8 @@ def find_comparables(
         index_points=index_points,
         widen=False,
         radius_m=radius_m,
+        time_days=time_days,
+        size_tol=size_tol,
     )
     estimate_payload = None
     if estimate.n_comps > 0:
@@ -115,13 +153,17 @@ def find_comparables(
         "as_of": dt_param(as_of),
         "size_sqm": size_sqm,
         "radius_m": radius_m,
+        "time_days": time_days,
+        "size_tol": size_tol,
         "floor": floor,
         "rooms": rooms,
         "source_row_id": source_row_id,
     }
+    comps_payload = [comp_row_payload(row) for row in selected]
     payload = {
         "candidate_count": len(comp_rows),
         "selected_count": len(selected),
+        "comps": comps_payload,
         "estimate": estimate_payload,
         "limitation": limitation_payload(service_result.limitation),
         "coverage_status": coverage_value(service_result.coverage_status),
@@ -141,6 +183,9 @@ def find_comparables(
         n_comps=estimate.n_comps,
         confidence=estimate.confidence if estimate_payload else None,
         candidate_count=len(comp_rows),
+        comps=comps_payload,
+        coverage_status=coverage_value(service_result.coverage_status),
+        limitation=limitation_payload(service_result.limitation),
         evidence_ids=[evidence.id],
     )
 
@@ -304,7 +349,7 @@ def compare_around_event(
     before: list[float] = []
     after: list[float] = []
     for row in comp_rows:
-        if row.effective_at > as_of:
+        if row.available_at > as_of:
             continue
         value = adjusted_nis_per_sqm(row)
         if value is None:

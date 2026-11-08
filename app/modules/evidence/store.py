@@ -17,6 +17,10 @@ def evidence_key(*, run_id: uuid.UUID, tool_name: str, params: dict[str, Any]) -
     return hashlib.sha256(material.encode()).hexdigest()
 
 
+def list_run_evidence(session: Session, run_id: uuid.UUID) -> list[Evidence]:
+    return repository.list_by_run(session, run_id)
+
+
 def upsert_evidence(
     session: Session,
     *,

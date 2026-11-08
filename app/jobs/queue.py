@@ -1,5 +1,13 @@
+"""Job queue: enqueue, lease claim, heartbeat, and terminal status updates.
+
+``enqueue`` returns ``(job, created)``. Reusing an idempotency key with a different
+body raises ``IdempotencyConflictError``. ``complete`` / ``fail`` / ``mark_incomplete``
+no-op once terminal. Expired leases requeue until ``max_attempts``, then ``failed``.
+"""
+
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -8,11 +16,14 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
+from app.core.logging import log_extra
 from app.jobs.canonical import canonical_request_json
 from app.jobs.exceptions import IdempotencyConflictError
 from app.jobs.models import Job
 
 TERMINAL_STATUSES = frozenset({"done", "failed", "incomplete"})
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
@@ -86,7 +97,7 @@ def heartbeat(session: Session, job_id: uuid.UUID, *, settings: Settings | None 
         update(Job)
         .where(
             Job.id == job_id,
-            Job.status == "running",
+            Job.status.in_(("running", "verifying")),
         )
         .values(
             heartbeat_at=now,
@@ -108,10 +119,25 @@ def complete(
         return False
     if job.status == "done":
         return True
+    if job.status not in {"running", "verifying"}:
+        return False
     job.status = "done"
     job.result_json = result_json
     job.lease_expires_at = None
     job.error = None
+    job.updated_at = now
+    session.flush()
+    return True
+
+
+def mark_verifying(session: Session, job_id: uuid.UUID) -> bool:
+    now = _now()
+    job = session.get(Job, job_id)
+    if job is None:
+        return False
+    if job.status in TERMINAL_STATUSES:
+        return False
+    job.status = "verifying"
     job.updated_at = now
     session.flush()
     return True
@@ -159,7 +185,7 @@ def requeue_expired_leases(session: Session) -> int:
     now = _now()
     expired = session.execute(
         select(Job).where(
-            Job.status == "running",
+            Job.status.in_(("running", "verifying")),
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at < now,
         )
@@ -170,10 +196,20 @@ def requeue_expired_leases(session: Session) -> int:
             job.status = "failed"
             job.error = job.error or "lease expired; max attempts reached"
             job.lease_expires_at = None
+            outcome = "failed"
         else:
             job.status = "queued"
             job.lease_expires_at = None
+            outcome = "requeued"
         job.updated_at = now
+        logger.warning(
+            "job lease expired",
+            extra=log_extra(
+                event="jobs.lease_expired",
+                job_id=str(job.id),
+                outcome=outcome,
+            ),
+        )
         count += 1
     if count:
         session.flush()

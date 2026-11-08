@@ -32,5 +32,11 @@ def record_llm_call(
     )
 
 
-def langgraph_config_with_run_id(run_id: uuid.UUID) -> dict[str, Any]:
-    return {"configurable": {"thread_id": str(run_id)}}
+def langgraph_config_with_run_id(
+    run_id: uuid.UUID,
+    extra_configurable: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    configurable = {"thread_id": str(run_id)}
+    if extra_configurable:
+        configurable.update(extra_configurable)
+    return {"configurable": configurable}

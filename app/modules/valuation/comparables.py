@@ -44,12 +44,17 @@ def select_comparables(
     *,
     widen: bool = True,
     radius_m: float | None = None,
+    time_days: int | None = None,
+    size_tol: float | None = None,
 ) -> list[CompRow]:
+    """Filter comps; drops future ``available_at`` rows and the subject's own sale."""
     pool = [row for row in rows if _usable(row, subject)]
     radius_i = 0
     time_i = 0
     size_i = 0
     start_radius = radius_m if radius_m is not None else RADIUS_M[0]
+    start_time = time_days if time_days is not None else TIME_DAYS[0]
+    start_size = size_tol if size_tol is not None else SIZE_TOLERANCE[0]
 
     def _selected(*, rad: float, time_days: int, size_tol: float) -> list[CompRow]:
         return [
@@ -66,8 +71,8 @@ def select_comparables(
 
     selected = _selected(
         rad=start_radius,
-        time_days=TIME_DAYS[time_i],
-        size_tol=SIZE_TOLERANCE[size_i],
+        time_days=start_time,
+        size_tol=start_size,
     )
     if not widen:
         return selected

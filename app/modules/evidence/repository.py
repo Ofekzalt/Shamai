@@ -20,6 +20,11 @@ def get_by_key(session: Session, key: str) -> Evidence | None:
     return session.scalars(stmt).first()
 
 
+def list_by_run(session: Session, run_id: uuid.UUID) -> list[Evidence]:
+    stmt = select(Evidence).where(Evidence.run_id == run_id)
+    return list(session.scalars(stmt).all())
+
+
 def upsert(
     session: Session,
     *,

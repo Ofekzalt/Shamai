@@ -423,6 +423,7 @@ def renewal_at_point(
             source_feature_id=row.source_feature_id,
             taba=row.taba,
             snapshot_status=row.snapshot_status,
+            effective_at=row.effective_at,
         )
         for row in rows
     ]

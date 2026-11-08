@@ -40,9 +40,14 @@ InterpretationJudge = Callable[[InterpretationClaim], bool]
 def _resolve_path(payload: dict[str, Any], path: str) -> Any:
     current: Any = payload
     for part in path.split("."):
-        if not isinstance(current, dict):
-            return None
-        current = current.get(part)
+        if isinstance(current, dict):
+            current = current.get(part)
+            continue
+        if isinstance(current, list) and part.isdigit():
+            idx = int(part)
+            current = current[idx] if 0 <= idx < len(current) else None
+            continue
+        return None
     return current
 
 
@@ -122,6 +127,7 @@ def verify_claim(
     *,
     judge: InterpretationJudge | None = None,
 ) -> VerifyOutcome:
+    """Observed/calculated failures reject; interpretation judge failure qualifies."""
     if isinstance(claim, ObservedClaim):
         return verify_observed(claim, evidence)
     if isinstance(claim, CalculatedClaim):

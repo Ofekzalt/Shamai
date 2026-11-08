@@ -1,0 +1,93 @@
+# Golden properties for agent eval. Requires geocode cache + loaded transactions/plans for full scoring.
+# Addresses use TLV municipal street names (layer 527).
+properties:
+  - id: rothschild-1-homebuyer
+    address: "רוטשילד 1"
+    asking_price_agorot: 400000000
+    size_sqm: 80
+    profile: homebuyer
+    as_of: "2025-01-01"
+  - id: rothschild-1-investor
+    address: "רוטשילד 1"
+    asking_price_agorot: 410000000
+    size_sqm: 80
+    profile: investor
+    as_of: "2025-01-01"
+  - id: rothschild-1-thin
+    address: "רוטשילד 1"
+    asking_price_agorot: 390000000
+    size_sqm: 55
+    profile: homebuyer
+    as_of: "2024-06-01"
+  - id: dizengoff-50-homebuyer
+    address: "דיזנגוף 50"
+    asking_price_agorot: 520000000
+    size_sqm: 95
+    profile: homebuyer
+    as_of: "2025-01-01"
+  - id: dizengoff-50-investor
+    address: "דיזנגוף 50"
+    asking_price_agorot: 500000000
+    size_sqm: 95
+    profile: investor
+    as_of: "2025-01-01"
+  - id: ibn-gabirol-30
+    address: "אבן גבירול 30"
+    asking_price_agorot: 450000000
+    size_sqm: 75
+    profile: investor
+    as_of: "2025-01-01"
+  - id: allenby-100
+    address: "אלנבי 100"
+    asking_price_agorot: 380000000
+    size_sqm: 68
+    profile: homebuyer
+    as_of: "2025-01-01"
+  - id: frishman-20
+    address: "פרישמן 20"
+    asking_price_agorot: 470000000
+    size_sqm: 72
+    profile: investor
+    as_of: "2025-01-01"
+  - id: ben-yehuda-12
+    address: "בן יהודה 12"
+    asking_price_agorot: 360000000
+    size_sqm: 60
+    profile: homebuyer
+    as_of: "2025-03-01"
+  - id: king-george-25
+    address: "מלך ג'ורג' 25"
+    asking_price_agorot: 420000000
+    size_sqm: 78
+    profile: investor
+    as_of: "2025-01-01"
+  - id: bialik-8
+    address: "ביאליק 8"
+    asking_price_agorot: 550000000
+    size_sqm: 90
+    profile: homebuyer
+    as_of: "2025-01-01"
+  - id: arlozorov-45
+    address: "ארלוזורוב 45"
+    asking_price_agorot: 610000000
+    size_sqm: 100
+    profile: investor
+    as_of: "2025-01-01"
+  - id: rothschild-1-2024
+    address: "רוטשילד 1"
+    asking_price_agorot: 400000000
+    size_sqm: 80
+    profile: homebuyer
+    as_of: "2024-01-01"
+  - id: rothschild-1-premium
+    address: "רוטשילד 1"
+    asking_price_agorot: 600000000
+    size_sqm: 80
+    profile: investor
+    as_of: "2025-01-01"
+  - id: dizengoff-50-2023
+    address: "דיזנגוף 50"
+    asking_price_agorot: 480000000
+    size_sqm: 95
+    profile: homebuyer
+    as_of: "2023-06-01"

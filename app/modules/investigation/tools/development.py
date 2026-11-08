@@ -16,6 +16,8 @@ from app.modules.planning.dto import PlansAtPointQuery, RenewalAtPointQuery
 
 class PlansAtLocationResult(BaseModel):
     plans: list[dict]
+    coverage_status: str | None
+    limitation: dict | None
     evidence_ids: list[uuid.UUID]
 
 
@@ -26,6 +28,8 @@ class PlanStatusHistoryResult(BaseModel):
 
 class RenewalAreasResult(BaseModel):
     renewals: list[dict]
+    coverage_status: str | None
+    limitation: dict | None
     evidence_ids: list[uuid.UUID]
 
 
@@ -68,7 +72,12 @@ def plans_at_location(
         retrieved_at=retrieved_at,
         coverage_status=coverage_value(service_result.coverage_status),
     )
-    return PlansAtLocationResult(plans=plans, evidence_ids=[evidence.id])
+    return PlansAtLocationResult(
+        plans=plans,
+        coverage_status=coverage_value(service_result.coverage_status),
+        limitation=limitation_payload(service_result.limitation),
+        evidence_ids=[evidence.id],
+    )
 
 
 def plan_status_history(
@@ -128,6 +137,7 @@ def renewal_areas(
             "source_feature_id": row.source_feature_id,
             "taba": row.taba,
             "snapshot_status": row.snapshot_status,
+            "effective_at": dt_param(row.effective_at) if row.effective_at else None,
         }
         for row in service_result.data
     ]
@@ -149,4 +159,9 @@ def renewal_areas(
         retrieved_at=retrieved_at,
         coverage_status=coverage_value(service_result.coverage_status),
     )
-    return RenewalAreasResult(renewals=renewals, evidence_ids=[evidence.id])
+    return RenewalAreasResult(
+        renewals=renewals,
+        coverage_status=coverage_value(service_result.coverage_status),
+        limitation=limitation_payload(service_result.limitation),
+        evidence_ids=[evidence.id],
+    )

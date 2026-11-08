@@ -1,0 +1,29 @@
+# Investor report
+
+Address: {{ report.address }}
+
+Historical growth is presented as scenarios only. This report does not predict a future price.
+
+{% if report.correlation_not_causation or report.compare_around_event %}
+Renewal versus nearby transaction prices is an index-adjusted correlation, not evidence that the plan caused appreciation.
+{% endif %}
+
+## Claims
+{% for claim in report.claims %}
+- {{ claim.text }}
+{% endfor %}
+
+## Missing information
+{% for item in report.missing_information %}
+- {{ item }}
+{% endfor %}
+
+## Uncertainty
+{% for item in report.uncertainty %}
+- {{ item }}
+{% endfor %}
+
+## Conflicts
+{% for item in report.conflicts %}
+- {{ item }}
+{% endfor %}

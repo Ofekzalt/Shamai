@@ -7,6 +7,7 @@ import psycopg
 from langgraph.checkpoint.postgres import PostgresSaver
 
 from app.core.config import get_settings
+from app.core.logging import log_extra
 
 logger = logging.getLogger(__name__)
 
@@ -35,4 +36,7 @@ def ensure_checkpointer_ready() -> None:
             finally:
                 conn.execute("SELECT pg_advisory_unlock(%s)", (_ADVISORY_LOCK_ID,))
         _ready = True
-        logger.info("langgraph checkpointer ready")
+        logger.info(
+            "langgraph checkpointer ready",
+            extra=log_extra(event="jobs.checkpointer_ready"),
+        )

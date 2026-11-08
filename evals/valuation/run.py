@@ -4,6 +4,7 @@ import logging
 import sys
 from collections import defaultdict
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from app.core.config import get_settings
@@ -25,6 +26,12 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
+_RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
+
+
+def _write_summary(lines: list[str]) -> None:
+    _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    (_RESULTS_DIR / "valuation_latest.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _to_comp(row, *, distance_m: float | None = None) -> CompRow:
@@ -71,6 +78,14 @@ def _run_with_session(session: Session, *, as_of: datetime) -> int:
             extra=log_extra(event="valuation.insufficient_comps", record_count=0),
         )
         print("no transactions loaded; run a property_data load first", file=sys.stderr)
+        _write_summary(
+            [
+                "# Valuation backtest summary",
+                "",
+                "- Status: no geolocated transactions at `as_of`",
+                "- Action: load property_data, then re-run `python -m evals.valuation.run`",
+            ]
+        )
         return 1
     _, test = temporal_holdout(sales, as_of=as_of)
     if not test:
@@ -143,6 +158,14 @@ def _run_with_session(session: Session, *, as_of: datetime) -> int:
             extra=log_extra(event="valuation.insufficient_comps", record_count=len(test)),
         )
         print("holdout produced no scorable estimates", file=sys.stderr)
+        _write_summary(
+            [
+                "# Valuation backtest summary",
+                "",
+                "- Status: holdout produced no scorable estimates",
+                f"- Test sales in holdout: {len(test)}",
+            ]
+        )
         return 1
     engine: MetricSet = score(engine_actuals, engine_preds)
     baseline_metrics = score(engine_actuals, base_preds)
@@ -155,6 +178,14 @@ def _run_with_session(session: Session, *, as_of: datetime) -> int:
     logger.info(
         "valuation completed",
         extra=log_extra(event="valuation.completed", record_count=len(engine_actuals)),
+    )
+    _write_summary(
+        [
+            "# Valuation backtest summary",
+            "",
+            f"- {format_metrics('comps', engine)}",
+            f"- {format_metrics('baseline', baseline_metrics)}",
+        ]
     )
     return 0
 

@@ -14,6 +14,16 @@ services:
       retries: 10
       start_period: 10s
 
+  migrate:
+    build: .
+    command: ["uv", "run", "--no-sync", "alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://shamai:shamai@db:5432/shamai
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build: .
     command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -22,8 +32,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://shamai:shamai@db:5432/shamai
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   worker:
     build: .
@@ -31,5 +41,5 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://shamai:shamai@db:5432/shamai
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully

@@ -22,6 +22,7 @@ class RenewalAtPoint(BaseModel):
     source_feature_id: str
     taba: str | None
     snapshot_status: str | None
+    effective_at: datetime | None = None
 
 
 class PlansAtPointQuery(BaseModel):

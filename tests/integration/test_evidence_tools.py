@@ -141,6 +141,35 @@ def test_find_comparables_stores_limitation_not_zero(db_session) -> None:
     assert result.estimate_value_agorot is None
 
 
+def test_compare_around_event_excludes_not_yet_available(db_session) -> None:
+    origin_lon, origin_lat = 34.7818, 32.0853
+    event_at = datetime(2024, 6, 1, tzinfo=UTC)
+    as_of = datetime(2024, 6, 15, tzinfo=UTC)
+    _upsert(
+        db_session,
+        source_row_id="future-pub",
+        lon=origin_lon + 0.0003,
+        lat=origin_lat,
+        available=datetime(2024, 8, 1, tzinfo=UTC),
+        effective=datetime(2024, 5, 1, tzinfo=UTC),
+    )
+    db_session.flush()
+    result = market.compare_around_event(
+        db_session,
+        _offline_client(),
+        run_id=uuid.uuid4(),
+        lon=origin_lon,
+        lat=origin_lat,
+        as_of=as_of,
+        event_at=event_at,
+        radius_m=2000.0,
+    )
+    row = db_session.get(Evidence, result.evidence_ids[0])
+    assert row is not None
+    assert row.payload["before"]["count"] == 0
+    assert row.payload["after"]["count"] == 0
+
+
 def test_compare_around_event_marks_non_causal(db_session) -> None:
     origin_lon, origin_lat = 34.7818, 32.0853
     event_at = datetime(2024, 6, 1, tzinfo=UTC)

@@ -13,6 +13,7 @@ class CoverageStatus(StrEnum):
 class LimitationCode(StrEnum):
     COVERAGE_INCOMPLETE = "coverage_incomplete"
     PROVIDER_FAILED = "provider_failed"
+    TOOL_BUDGET_EXHAUSTED = "tool_budget_exhausted"
 
 
 class Limitation(BaseModel):

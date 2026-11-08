@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
+from app.core.logging import log_extra
 from app.jobs.exceptions import IdempotencyConflictError
 from app.modules.investigation import service
 from app.modules.investigation.dto import (
@@ -15,9 +18,12 @@ from app.modules.investigation.dto import (
     AnalysisStatusResponse,
     CreateAnalysisRequest,
 )
+from app.modules.reporting.service import render_report
 
 router = APIRouter(tags=["analyses"])
 SessionDep = Annotated[Session, Depends(get_session)]
+
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -45,6 +51,10 @@ def create_analysis(
         session.commit()
     except IdempotencyConflictError as exc:
         session.rollback()
+        logger.warning(
+            "idempotency key conflict",
+            extra=log_extra(event="api.idempotency_conflict"),
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Idempotency-Key reused with a different request body",
@@ -66,14 +76,18 @@ def get_analysis_status(
     return AnalysisStatusResponse(id=job.id, status=job.status, error=job.error)
 
 
-@router.get("/analyses/{analysis_id}/report", response_model=AnalysisReportResponse)
+@router.get("/analyses/{analysis_id}/report", response_model=None)
 def get_analysis_report(
     analysis_id: uuid.UUID,
     session: SessionDep,
-) -> AnalysisReportResponse:
+    request: Request,
+) -> AnalysisReportResponse | PlainTextResponse:
     job = service.get_analysis(session, analysis_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis not found")
     if job.result_json is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not ready")
+    accept = request.headers.get("accept", "")
+    if "text/markdown" in accept:
+        return PlainTextResponse(render_report(job.result_json), media_type="text/markdown")
     return AnalysisReportResponse(report=job.result_json)
